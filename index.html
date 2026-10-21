@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kuis Nyamuk Terbang Hidup 🦟</title>
+    <title>Kuis Nyamuk Terbang 🦟</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
         body { 
@@ -26,7 +26,7 @@
         .area-terbang {
             position: relative;
             width: 100%;
-            height: 400px;
+            height: 420px;
             border: 2px dashed #333;
             border-radius: 15px;
             background: rgba(255,255,255,0.3);
@@ -34,7 +34,7 @@
         .nyamuk {
             position: absolute;
             width: 120px;
-            height: 90px;
+            height: 100px;
             cursor: pointer;
             transition: transform 0.2s;
             animation: terbang 4s infinite ease-in-out alternate;
@@ -46,26 +46,32 @@
             position: relative;
             width: 100%;
             height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .gambar-nyamuk {
-            width: 100%;
-            height: 100%;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
+            font-size: 55px;
+            line-height: 1;
+            animation: kepakSayap 0.3s infinite alternate;
+        }
+        @keyframes kepakSayap {
+            0% { transform: scaleX(1) rotate(-3deg); }
+            100% { transform: scaleX(1.15) rotate(3deg); }
         }
         .teks-jawaban {
             position: absolute;
-            top: -8px;
+            top: -5px;
             left: 50%;
             transform: translateX(-50%);
             background: #fff;
-            padding: 4px 12px;
+            padding: 4px 14px;
             border-radius: 20px;
             font-weight: bold;
             border: 2px solid #333;
             white-space: nowrap;
-            font-size: 14px;
+            font-size: 16px;
+            z-index: 2;
         }
         @keyframes terbang {
             0% { transform: translate(0, 0) rotate(-5deg); }
@@ -89,7 +95,7 @@
         .skor {
             text-align: center;
             margin-top: 20px;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
             color: #2c3e50;
         }
@@ -102,7 +108,7 @@
 </div>
 
 <div class="area-terbang" id="areaTerbang">
-    <!-- Nyamuk akan dibuat otomatis lewat JS -->
+    <!-- Nyamuk dibuat otomatis -->
 </div>
 
 <div class="skor">Skor: <span id="nilai">0</span></div>
@@ -111,43 +117,15 @@
 <div class="salah" id="pesanSalah">❌ Coba Lagi ya 😊</div>
 
 <script>
-// Daftar soal
 const daftarSoal = [
-    {
-        teks: "1 × 10 = ...",
-        jawabanBenar: "10",
-        pilihan: ["10", "1", "11", "20"]
-    },
-    {
-        teks: "5 + 7 = ...",
-        jawabanBenar: "12",
-        pilihan: ["10", "12", "13", "9"]
-    },
-    {
-        teks: "8 × 2 = ...",
-        jawabanBenar: "16",
-        pilihan: ["10", "14", "16", "18"]
-    }
+    { teks: "1 × 10 = ...", jawabanBenar: "10", pilihan: ["10", "1", "11", "20"] },
+    { teks: "5 + 7 = ...", jawabanBenar: "12", pilihan: ["10", "12", "13", "9"] },
+    { teks: "8 × 2 = ...", jawabanBenar: "16", pilihan: ["10", "14", "16", "18"] }
 ];
 
 let nomorSoal = 0;
 let skor = 0;
 
-// Fungsi buat nyamuk GIF yang lebih hidup
-function buatNyamukGIF() {
-    // Kalau mau ganti gambar, tinggal ganti link di bawah ini
-    const urlNyamuk = "https://cdn.pixabay.com/animation/2023/03/19/17/37/17-37-25-136_512.gif";
-
-    const img = document.createElement("img");
-    img.src = urlNyamuk;
-    img.style.width = "100%";
-    img.style.height = "100%";
-    img.style.objectFit = "contain";
-
-    return img;
-}
-
-// Tampilkan soal
 function tampilkanSoal() {
     const soalSekarang = daftarSoal[nomorSoal];
     document.getElementById("soal").textContent = `${nomorSoal+1}. ${soalSekarang.teks}`;
@@ -155,36 +133,22 @@ function tampilkanSoal() {
     const area = document.getElementById("areaTerbang");
     area.innerHTML = "";
 
-    // Acak urutan jawaban
     const pilihanAcak = [...soalSekarang.pilihan].sort(() => Math.random() - 0.5);
 
-    // Buat nyamuk untuk tiap jawaban
-    pilihanAcak.forEach((jawab, index) => {
+    pilihanAcak.forEach((jawab) => {
         const nyamuk = document.createElement("div");
         nyamuk.className = "nyamuk";
         nyamuk.style.left = `${Math.random() * 70 + 10}%`;
         nyamuk.style.top = `${Math.random() * 70 + 10}%`;
         nyamuk.style.animationDuration = `${3 + Math.random() * 2}s`;
 
-        const badan = document.createElement("div");
-        badan.className = "badan-nyamuk";
+        nyamuk.innerHTML = `
+            <div class="badan-nyamuk">
+                <div class="teks-jawaban">${jawab}</div>
+                <div class="gambar-nyamuk">🦟</div>
+            </div>
+        `;
 
-        const teks = document.createElement("div");
-        teks.className = "teks-jawaban";
-        teks.textContent = jawab;
-
-        const gambar = document.createElement("div");
-        gambar.className = "gambar-nyamuk";
-
-        // Masukkan GIF nyamuk ke dalam elemen gambar
-        const nyamukGIF = buatNyamukGIF();
-        gambar.appendChild(nyamukGIF);
-
-        badan.appendChild(teks);
-        badan.appendChild(gambar);
-        nyamuk.appendChild(badan);
-
-        // Cek jawaban saat diklik
         nyamuk.onclick = () => {
             if (jawab === soalSekarang.jawabanBenar) {
                 skor++;
@@ -193,18 +157,12 @@ function tampilkanSoal() {
                 setTimeout(() => {
                     document.getElementById("pesanBenar").style.display = "none";
                     nomorSoal++;
-                    if (nomorSoal < daftarSoal.length) {
-                        tampilkanSoal();
-                        putarSuaraBenar();
-                    } else {
-                        alert(`Selesai! Skor akhir kamu: ${skor}/${daftarSoal.length}`);
-                    }
+                    if (nomorSoal < daftarSoal.length) tampilkanSoal();
+                    else alert(`Selesai! Skor akhir: ${skor}/${daftarSoal.length}`);
                 }, 1200);
             } else {
                 document.getElementById("pesanSalah").style.display = "block";
-                setTimeout(() => {
-                    document.getElementById("pesanSalah").style.display = "none";
-                }, 1200);
+                setTimeout(() => document.getElementById("pesanSalah").style.display = "none", 1200);
             }
         };
 
@@ -212,13 +170,6 @@ function tampilkanSoal() {
     });
 }
 
-// Tambah suara benar
-function putarSuaraBenar() {
-    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3");
-    audio.play();
-}
-
-// Mulai kuis saat halaman dibuka
 tampilkanSoal();
 </script>
 
