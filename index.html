@@ -22,7 +22,8 @@
             text-align: center;
             font-size: 22px;
             font-weight: bold;
-        }        .area-terbang {
+        }
+        .area-terbang {
             position: relative;
             width: 100%;
             height: 420px;
@@ -101,17 +102,21 @@
             font-weight: bold;
             color: #2c3e50;
         }
+        .loading {
+            text-align: center;
+            font-size: 20px;
+            color: #333;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
 
 <div class="soal-container" id="soal">
-    1 × 10 = ...
+    <div class="loading">🔄 Sedang memuat soal...</div>
 </div>
 
-<div class="area-terbang" id="areaTerbang">
-    <!-- Nyamuk dibuat otomatis -->
-</div>
+<div class="area-terbang" id="areaTerbang"></div>
 
 <div class="skor">Skor: <span id="nilai">0</span></div>
 
@@ -119,22 +124,56 @@
 <div class="salah" id="pesanSalah">❌ Coba Lagi ya 😊</div>
 
 <script>
-const daftarSoal = [
-    { teks: "1 × 10 = ...", jawabanBenar: "10", pilihan: ["10", "1", "11", "20"] },
-    { teks: "5 + 7 = ...", jawabanBenar: "12", pilihan: ["10", "12", "13", "9"] },
-    { teks: "8 × 2 = ...", jawabanBenar: "16", pilihan: ["10", "14", "16", "18"] }
-];
+// === KONFIGURASI ===
+const URL_CSV = "soal.csv"; // Kalau satu folder, biarkan begini saja
+const URL_GAMBAR_NYAMUK = "https://raw.githubusercontent.com/hidayatrasyidsyafira/fotosiswaSMAN9/main/nyamuk.png"; // Ganti link gambar nyamuk kamu
+// ===================
 
+let daftarSoal = [];
 let nomorSoal = 0;
 let skor = 0;
 
+// Ambil & baca CSV
+async function ambilSoalCSV() {
+    try {
+        const res = await fetch(URL_CSV);
+        if (!res.ok) throw new Error("File tidak ketemu");
+        const teks = await res.text();
+        
+        // Parse CSV
+        const baris = teks.trim().split("\n");
+        daftarSoal = [];
+        
+        // Lewati baris judul (baris pertama)
+        for (let i = 1; i < baris.length; i++) {
+            const bagian = baris[i].split(",");
+            if (bagian.length < 3) continue;
+            
+            const teksSoal = bagian[0].trim();
+            const jawabanBenar = bagian[1].trim();
+            const pilihan = bagian.slice(2).map(p => p.trim().replace(/"/g, ""));
+            
+            daftarSoal.push({ teks: teksSoal, jawabanBenar, pilihan });
+        }
+        
+        tampilkanSoal();
+    } catch (err) {
+        document.getElementById("soal").innerHTML = 
+            `<div style="color:red">❌ Gagal muat soal!<br>Pastikan file soal.csv sudah ada.</div>`;
+        console.error(err);
+    }
+}
+
 function tampilkanSoal() {
+    if (!daftarSoal.length) return;
+    
     const soalSekarang = daftarSoal[nomorSoal];
     document.getElementById("soal").textContent = `${nomorSoal+1}. ${soalSekarang.teks}`;
     
     const area = document.getElementById("areaTerbang");
     area.innerHTML = "";
 
+    // Acak urutan jawaban
     const pilihanAcak = [...soalSekarang.pilihan].sort(() => Math.random() - 0.5);
 
     pilihanAcak.forEach((jawab) => {
@@ -144,13 +183,10 @@ function tampilkanSoal() {
         nyamuk.style.top = `${Math.random() * 70 + 10}%`;
         nyamuk.style.animationDuration = `${3 + Math.random() * 2}s`;
 
-        // Ganti dengan gambar nyamuk yang kamu upload
-        const urlNyamuk = "https://raw.githubusercontent.com/hidayatrasyidsyafira/fotosiswaSMAN9/main/nyamuk.png"; // Ganti dengan link gambar kamu
-
         nyamuk.innerHTML = `
             <div class="badan-nyamuk">
                 <div class="teks-jawaban">${jawab}</div>
-                <div class="gambar-nyamuk" style="background-image: url('${urlNyamuk}')"></div>
+                <div class="gambar-nyamuk" style="background-image: url('${URL_GAMBAR_NYAMUK}')"></div>
             </div>
         `;
 
@@ -175,7 +211,8 @@ function tampilkanSoal() {
     });
 }
 
-tampilkanSoal();
+// Mulai
+ambilSoalCSV();
 </script>
 
 </body>
