@@ -22,8 +22,7 @@
             text-align: center;
             font-size: 22px;
             font-weight: bold;
-        }
-        .area-terbang {
+        }        .area-terbang {
             position: relative;
             width: 100%;
             height: 420px;
@@ -51,8 +50,11 @@
             align-items: center;
         }
         .gambar-nyamuk {
-            font-size: 55px;
-            line-height: 1;
+            width: 100%;
+            height: 100%;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
             animation: kepakSayap 0.3s infinite alternate;
         }
         @keyframes kepakSayap {
@@ -142,10 +144,13 @@ function tampilkanSoal() {
         nyamuk.style.top = `${Math.random() * 70 + 10}%`;
         nyamuk.style.animationDuration = `${3 + Math.random() * 2}s`;
 
+        // Ganti dengan gambar nyamuk yang kamu upload
+        const urlNyamuk = "https://raw.githubusercontent.com/hidayatrasyidsyafira/fotosiswaSMAN9/main/nyamuk.png"; // Ganti dengan link gambar kamu
+
         nyamuk.innerHTML = `
             <div class="badan-nyamuk">
                 <div class="teks-jawaban">${jawab}</div>
-                <div class="gambar-nyamuk">🦟</div>
+                <div class="gambar-nyamuk" style="background-image: url('${urlNyamuk}')"></div>
             </div>
         `;
 
