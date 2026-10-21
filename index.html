@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kuis Nyamuk Terbang + Kamera + Suara 📸🦟🔊</title>
+    <title>Kuis Nyamuk Terbang — Nyamuk Pasti Muncul 📸🦟🔊</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
         body { 
@@ -108,7 +108,7 @@
             padding: 20px;
         }
 
-        /* Area terbang — background kamera */
+        /* Area terbang — LAPISAN DIPERBAIKI */
         .area-terbang {
             position: relative;
             width: 100%;
@@ -116,19 +116,19 @@
             border: 2px dashed #333;
             border-radius: 15px;
             overflow: hidden;
-            background: rgba(255,255,255,0.1);
+            background: rgba(135,206,235,0.4);
         }
         .video-bg {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
             object-fit: cover;
-            z-index: 1;
+            z-index: 1; /* Kamera di bawah */
             transform: scaleX(-1);
-            opacity: 0.85;
+            opacity: 0.75;
         }
 
-        /* Nyamuk & jawaban */
+        /* NYAMUK — DIPASTIKAN DI ATAS KAMERA */
         .nyamuk {
             position: absolute;
             width: 120px;
@@ -136,7 +136,7 @@
             cursor: pointer;
             transition: transform 0.2s;
             animation: terbang 4s infinite ease-in-out alternate;
-            z-index: 10;
+            z-index: 10; /* Nyamuk di atas kamera */
         }
         .nyamuk:hover { transform: scale(1.3); }
         .badan-nyamuk {
@@ -147,10 +147,12 @@
             align-items: center;
         }
         .gambar-nyamuk {
-            width: 100%; height: 100%;
+            width: 100%;
+            height: 100%;
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
+            background-color: transparent;
             animation: kepakSayap 0.3s infinite alternate;
         }
         @keyframes kepakSayap {
@@ -231,7 +233,7 @@
 </div>
 
 <div class="area-terbang" id="areaTerbang">
-    <!-- Video background dimuat otomatis -->
+    <!-- Video background -->
 </div>
 
 <div class="skor">Skor: <span id="nilai">0</span></div>
@@ -251,7 +253,7 @@
 const URL_CSV = "soal.csv";
 const URL_GAMBAR_NYAMUK = "https://raw.githubusercontent.com/hidayatrasyidsyafira/fotosiswaSMAN9/main/nyamuk.png";
 
-// 🔊 SUARA — bisa diganti linknya kalau mau
+// 🔊 SUARA
 const SUARA_BENAR = "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3";
 const SUARA_SALAH = "https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3";
 // ===================
@@ -265,11 +267,11 @@ let hitungFoto = 0;
 // Putar suara
 function mainSuara(link) {
     const audio = new Audio(link);
-    audio.volume = 0.7; // 0.0 - 1.0
-    audio.play().catch(e => console.log("Suara diputar:", e));
+    audio.volume = 0.7;
+    audio.play().catch(e => console.log("Suara:", e));
 }
 
-// 1. AKTIFKAN KAMERA — 2 tampilan: kecil pojok + background area terbang
+// 1. AKTIFKAN KAMERA
 async function mulaiKamera() {
     const wadah = document.getElementById("wadahKamera");
     const pesan = document.getElementById("pesanKamera");
@@ -280,15 +282,18 @@ async function mulaiKamera() {
             video: { facingMode: "user", width: 640, height: 480 } 
         });
 
-        // Kamera kecil di pojok kanan atas
+        // Kamera kecil pojok
         wadah.innerHTML = `<video autoplay playsinline id="videoKamera"></video>`;
         videoKamera = document.getElementById("videoKamera");
         videoKamera.srcObject = stream;
 
-        // Kamera sebagai background di area terbang
-        area.innerHTML = `<video autoplay playsinline id="videoBg" class="video-bg"></video>`;
-        const videoBg = document.getElementById("videoBg");
+        // Background kamera
+        const videoBg = document.createElement("video");
+        videoBg.autoplay = true;
+        videoBg.playsInline = true;
+        videoBg.className = "video-bg";
         videoBg.srcObject = stream;
+        area.appendChild(videoBg);
 
     } catch (err) {
         pesan.innerHTML = "❌ Kamera tidak bisa dibuka<br>(Izinkan akses kamera)";
@@ -296,7 +301,7 @@ async function mulaiKamera() {
     }
 }
 
-// 2. AMBIL FOTO OTOMATIS
+// 2. AMBIL FOTO
 function ambilFoto() {
     if (!videoKamera) return;
     
@@ -305,18 +310,17 @@ function ambilFoto() {
     kanvas.width = 320;
     kanvas.height = 240;
     
-    // Balik gambar biar seperti cermin
     ctx.translate(kanvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(videoKamera, 0, 0, kanvas.width, kanvas.height);
     
-    // Efek kilatan
+    // Kilatan
     const efek = document.getElementById("efekFoto");
     efek.classList.remove("nyala");
     void efek.offsetWidth;
     efek.classList.add("nyala");
     
-    // Simpan ke galeri
+    // Simpan foto
     const dataFoto = kanvas.toDataURL("image/png");
     hitungFoto++;
     
@@ -324,7 +328,7 @@ function ambilFoto() {
     const img = document.createElement("img");
     img.src = dataFoto;
     img.className = "foto-diambil";
-    img.title = `Foto ${hitungFoto} — Klik untuk simpan`;
+    img.title = `Foto ${hitungFoto} — Klik simpan`;
     img.onclick = () => {
         const link = document.createElement("a");
         link.href = dataFoto;
@@ -334,7 +338,7 @@ function ambilFoto() {
     daftar.appendChild(img);
 }
 
-// 3. BACA SOAL DARI CSV
+// 3. BACA SOAL CSV
 async function ambilSoalCSV() {
     try {
         const res = await fetch(URL_CSV);
@@ -358,12 +362,12 @@ async function ambilSoalCSV() {
         tampilkanSoal();
     } catch (err) {
         document.getElementById("soal").innerHTML = 
-            `<div style="color:red">❌ Gagal muat soal!<br>Pastikan file soal.csv sudah ada di repositori.</div>`;
+            `<div style="color:red">❌ Gagal muat soal!<br>Pastikan file soal.csv ada di repositori.</div>`;
         console.error(err);
     }
 }
 
-// 4. TAMPILKAN SOAL & NYAMUK
+// 4. TAMPILKAN SOAL & NYAMUK — DIPERBAIKI
 function tampilkanSoal() {
     if (!daftarSoal.length) return;
     
@@ -371,12 +375,11 @@ function tampilkanSoal() {
     document.getElementById("soal").textContent = `${nomorSoal+1}. ${soalSekarang.teks}`;
     
     const area = document.getElementById("areaTerbang");
-    // Simpan video background, hapus hanya nyamuk
+    // Hapus hanya nyamuk, biarkan video tetap ada
     const videoBg = area.querySelector(".video-bg");
     area.innerHTML = "";
     if (videoBg) area.appendChild(videoBg);
 
-    // Acak urutan jawaban
     const pilihanAcak = [...soalSekarang.pilihan].sort(() => Math.random() - 0.5);
 
     pilihanAcak.forEach((jawab) => {
@@ -385,6 +388,13 @@ function tampilkanSoal() {
         nyamuk.style.left = `${Math.random() * 70 + 10}%`;
         nyamuk.style.top = `${Math.random() * 70 + 10}%`;
         nyamuk.style.animationDuration = `${3 + Math.random() * 2}s`;
+
+        // Cek gambar nyamuk
+        const imgTest = new Image();
+        imgTest.src = URL_GAMBAR_NYAMUK;
+        imgTest.onerror = () => {
+            console.log("Gambar gagal dimuat:", URL_GAMBAR_NYAMUK);
+        };
 
         nyamuk.innerHTML = `
             <div class="badan-nyamuk">
@@ -397,17 +407,17 @@ function tampilkanSoal() {
             if (jawab === soalSekarang.jawabanBenar) {
                 skor++;
                 document.getElementById("nilai").textContent = skor;
-                mainSuara(SUARA_BENAR); // 🔊 Suara BENAR
-                ambilFoto(); // Foto otomatis saat benar
+                mainSuara(SUARA_BENAR);
+                ambilFoto();
                 document.getElementById("pesanBenar").style.display = "block";
                 setTimeout(() => {
                     document.getElementById("pesanBenar").style.display = "none";
                     nomorSoal++;
                     if (nomorSoal < daftarSoal.length) tampilkanSoal();
-                    else alert(`🎉 Selesai! Skor: ${skor}/${daftarSoal.length}\n📸 Foto tersimpan: ${hitungFoto} lembar\nKlik foto di pojok untuk unduh!`);
+                    else alert(`🎉 Selesai! Skor: ${skor}/${daftarSoal.length}\n📸 Foto: ${hitungFoto} lembar`);
                 }, 1500);
             } else {
-                mainSuara(SUARA_SALAH); // 🔊 Suara SALAH
+                mainSuara(SUARA_SALAH);
                 document.getElementById("pesanSalah").style.display = "block";
                 setTimeout(() => document.getElementById("pesanSalah").style.display = "none", 1200);
             }
@@ -417,7 +427,7 @@ function tampilkanSoal() {
     });
 }
 
-// MULAI SEMUA
+// MULAI
 mulaiKamera();
 ambilSoalCSV();
 </script>
