@@ -3,15 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kuis Nyamuk Terbang 🦟</title>
+    <title>Kuis Nyamuk Terbang + Kamera + Foto Otomatis 📸🦟</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
         body { 
             background: linear-gradient(to bottom, #87CEEB, #90EE90); 
             min-height: 100vh; 
-            overflow: hidden;
+            overflow-x: hidden;
             padding: 20px;
         }
+        /* KAMERA */
+        .wadah-kamera {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 160px;
+            height: 120px;
+            border-radius: 12px;
+            border: 3px solid white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            overflow: hidden;
+            z-index: 50;
+            background: #000;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* seperti cermin */
+        }
+        .kamera-mati {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: white;
+            font-size: 12px;
+            text-align: center;
+            padding: 5px;
+        }
+        /* KANVAS FOTO (tersembunyi) */
+        #kanvasFoto { display: none; }
+        
+        /* GALERI FOTO */
+        .galeri-foto {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            max-width: 200px;
+            z-index: 50;
+        }
+        .galeri-foto h4 {
+            font-size: 12px;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            margin-bottom: 5px;
+        }
+        .foto-diambil {
+            width: 60px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 2px solid gold;
+            margin: 2px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .foto-diambil:hover { transform: scale(1.5); }
+        
         .soal-container {
             background: white;
             max-width: 700px;
@@ -88,6 +148,7 @@
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             padding: 30px 50px; border-radius: 15px; font-size: 30px; font-weight: bold;
             z-index: 100; box-shadow: 0 0 20px green; display: none;
+            text-align: center;
         }
         .salah { 
             background: #FFB6C1; 
@@ -108,9 +169,52 @@
             color: #333;
             padding: 20px;
         }
+        .efek-foto {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200%;
+            height: 200%;
+            background: rgba(255,255,255,0);
+            pointer-events: none;
+            z-index: 99;
+        }
+        .efek-foto.nyala {
+            animation: kilatan 0.5s ease-out;
+        }
+        @keyframes kilatan {
+            0% { background: rgba(255,255,255,0.8); }
+            100% { background: rgba(255,255,255,0); }
+        }
+        
+        /* Responsif HP */
+        @media (max-width: 600px) {
+            .wadah-kamera { width: 120px; height: 90px; }
+            .soal-container { margin-top: 110px; font-size: 18px; padding: 15px; }
+            .galeri-foto { bottom: 10px; right: 10px; }
+            .foto-diambil { width: 50px; height: 38px; }
+        }
     </style>
 </head>
 <body>
+
+<!-- Efek Kilatan Foto -->
+<div class="efek-foto" id="efekFoto"></div>
+
+<!-- Kamera -->
+<div class="wadah-kamera" id="wadahKamera">
+    <div class="kamera-mati" id="pesanKamera">📷 Meminta akses kamera...</div>
+</div>
+
+<!-- Kanvas Tersembunyi untuk Foto -->
+<canvas id="kanvasFoto"></canvas>
+
+<!-- Galeri Foto -->
+<div class="galeri-foto">
+    <h4>📸 Foto Benar:</h4>
+    <div id="daftarFoto"></div>
+</div>
 
 <div class="soal-container" id="soal">
     <div class="loading">🔄 Sedang memuat soal...</div>
@@ -120,31 +224,88 @@
 
 <div class="skor">Skor: <span id="nilai">0</span></div>
 
-<div class="benar" id="pesanBenar">✅ BENAR! 🎉</div>
+<div class="benar" id="pesanBenar">✅ BENAR! 🎉<br>📸 Foto Tersimpan!</div>
 <div class="salah" id="pesanSalah">❌ Coba Lagi ya 😊</div>
 
 <script>
 // === KONFIGURASI ===
-const URL_CSV = "soal.csv"; // Kalau satu folder, biarkan begini saja
-const URL_GAMBAR_NYAMUK = "https://raw.githubusercontent.com/hidayatrasyidsyafira/fotosiswaSMAN9/main/nyamuk.png"; // Ganti link gambar nyamuk kamu
+const URL_CSV = "soal.csv";
+const URL_GAMBAR_NYAMUK = "https://raw.githubusercontent.com/hidayatrasyidsyafira/fotosiswaSMAN9/main/nyamuk.png";
 // ===================
 
 let daftarSoal = [];
 let nomorSoal = 0;
 let skor = 0;
+let videoKamera = null;
+let hitungFoto = 0;
 
-// Ambil & baca CSV
+// 1. AKTIFKAN KAMERA
+async function mulaiKamera() {
+    const wadah = document.getElementById("wadahKamera");
+    const pesan = document.getElementById("pesanKamera");
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "user", width: 320, height: 240 } 
+        });
+        wadah.innerHTML = `<video autoplay playsinline id="videoKamera"></video>`;
+        videoKamera = document.getElementById("videoKamera");
+        videoKamera.srcObject = stream;
+    } catch (err) {
+        pesan.innerHTML = "❌ Kamera tidak bisa dibuka<br>(Izinkan akses kamera di pengaturan)";
+        console.error("Kamera error:", err);
+    }
+}
+
+// 2. AMBIL FOTO OTOMATIS
+function ambilFoto() {
+    if (!videoKamera) return;
+    
+    const kanvas = document.getElementById("kanvasFoto");
+    const ctx = kanvas.getContext("2d");
+    
+    kanvas.width = 320;
+    kanvas.height = 240;
+    
+    // Balik gambar biar sesuai tampilan cermin
+    ctx.translate(kanvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(videoKamera, 0, 0, kanvas.width, kanvas.height);
+    
+    // Efek kilatan
+    const efek = document.getElementById("efekFoto");
+    efek.classList.remove("nyala");
+    void efek.offsetWidth; // reset animasi
+    efek.classList.add("nyala");
+    
+    // Simpan foto ke galeri
+    const dataFoto = kanvas.toDataURL("image/png");
+    hitungFoto++;
+    
+    const daftar = document.getElementById("daftarFoto");
+    const img = document.createElement("img");
+    img.src = dataFoto;
+    img.className = "foto-diambil";
+    img.title = `Foto ${hitungFoto} — Klik untuk simpan`;
+    img.onclick = () => {
+        const link = document.createElement("a");
+        link.href = dataFoto;
+        link.download = `foto_benar_${hitungFoto}.png`;
+        link.click();
+    };
+    daftar.appendChild(img);
+}
+
+// 3. AMBIL SOAL DARI CSV
 async function ambilSoalCSV() {
     try {
         const res = await fetch(URL_CSV);
         if (!res.ok) throw new Error("File tidak ketemu");
         const teks = await res.text();
         
-        // Parse CSV
         const baris = teks.trim().split("\n");
         daftarSoal = [];
         
-        // Lewati baris judul (baris pertama)
         for (let i = 1; i < baris.length; i++) {
             const bagian = baris[i].split(",");
             if (bagian.length < 3) continue;
@@ -164,6 +325,7 @@ async function ambilSoalCSV() {
     }
 }
 
+// 4. TAMPILKAN SOAL & NYAMUK
 function tampilkanSoal() {
     if (!daftarSoal.length) return;
     
@@ -173,7 +335,6 @@ function tampilkanSoal() {
     const area = document.getElementById("areaTerbang");
     area.innerHTML = "";
 
-    // Acak urutan jawaban
     const pilihanAcak = [...soalSekarang.pilihan].sort(() => Math.random() - 0.5);
 
     pilihanAcak.forEach((jawab) => {
@@ -194,13 +355,17 @@ function tampilkanSoal() {
             if (jawab === soalSekarang.jawabanBenar) {
                 skor++;
                 document.getElementById("nilai").textContent = skor;
+                
+                // AMBIL FOTO OTOMATIS saat BENAR ✅
+                ambilFoto();
+                
                 document.getElementById("pesanBenar").style.display = "block";
                 setTimeout(() => {
                     document.getElementById("pesanBenar").style.display = "none";
                     nomorSoal++;
                     if (nomorSoal < daftarSoal.length) tampilkanSoal();
-                    else alert(`Selesai! Skor akhir: ${skor}/${daftarSoal.length}`);
-                }, 1200);
+                    else alert(`🎉 Selesai! Skor: ${skor}/${daftarSoal.length}\n📸 Foto tersimpan: ${hitungFoto} lembar\n(Klik foto di pojok kanan bawah untuk menyimpan)`);
+                }, 1500);
             } else {
                 document.getElementById("pesanSalah").style.display = "block";
                 setTimeout(() => document.getElementById("pesanSalah").style.display = "none", 1200);
@@ -211,7 +376,8 @@ function tampilkanSoal() {
     });
 }
 
-// Mulai
+// MULAI SEMUA
+mulaiKamera();
 ambilSoalCSV();
 </script>
 
